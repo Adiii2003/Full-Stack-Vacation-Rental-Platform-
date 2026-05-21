@@ -1,0 +1,35 @@
+{
+  "communities": {
+    "0": ["app_main", "listing_router", "review_router", "user_router", "passport_auth", "session_store"],
+    "1": ["listing_model", "review_model", "user_model"],
+    "2": ["listing_controller", "review_controller", "users_controller", "controller_createListing", "controller_updateListing", "controller_destroyListing", "controller_createReview", "controller_destroyReview", "controller_signup", "controller_login", "controller_logout"],
+    "3": ["middleware_isLoggedIn", "middleware_isOwner", "middleware_isReviewAuthor", "middleware_validateListing", "middleware_validateReview", "middleware_saveRedirectUrl", "doc_auth"],
+    "4": ["mapbox_service", "utils_ExpressError", "utils_wrapAsync"]
+  },
+  "cohesion": {
+    "0": 0.94,
+    "1": 0.98,
+    "2": 0.91,
+    "3": 0.89,
+    "4": 0.87
+  },
+  "gods": [
+    {"id": "listing_model", "centrality": 0.92, "rank": 1, "label": "Listing Model"},
+    {"id": "app_main", "centrality": 0.88, "rank": 2, "label": "Express Application"},
+    {"id": "user_model", "centrality": 0.82, "rank": 3, "label": "User Model"},
+    {"id": "review_model", "centrality": 0.78, "rank": 4, "label": "Review Model"},
+    {"id": "passport_auth", "centrality": 0.75, "rank": 5, "label": "Passport Auth"}
+  ],
+  "surprises": [
+    {"node_1": "mapbox_service", "node_2": "controller_createListing", "path_length": 1, "insight": "Mapbox dependency in create listing operation for geocoding"},
+    {"node_1": "middleware_validateListing", "node_2": "utils_ExpressError", "path_length": 1, "insight": "Validation errors handled via ExpressError utility"},
+    {"node_1": "utils_wrapAsync", "node_2": "review_router", "path_length": 1, "insight": "All async handlers wrapped for error handling"}
+  ],
+  "questions": [
+    "How does the cascade delete work when a listing is removed?",
+    "What validations are performed before creating a new listing?",
+    "What is the authentication flow for user signup vs login?",
+    "How are review permissions enforced?",
+    "How does Mapbox integration work in the listing creation flow?"
+  ]
+}

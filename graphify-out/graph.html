@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Full-Stack Vacation Rental Platform - Knowledge Graph</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #e2e8f0; overflow: hidden; }
+        #canvas { width: 100vw; height: 100vh; }
+        .tooltip { position: absolute; padding: 8px 12px; background: rgba(15, 23, 42, 0.95); border: 1px solid #64748b; border-radius: 4px; pointer-events: none; font-size: 12px; z-index: 1000; display: none; }
+        .sidebar { position: absolute; left: 0; top: 0; width: 320px; height: 100vh; background: rgba(15, 23, 42, 0.98); border-right: 1px solid #475569; overflow-y: auto; padding: 20px; z-index: 100; }
+        .sidebar h2 { font-size: 16px; margin-bottom: 15px; color: #64b5f6; }
+        .node-info { background: rgba(100, 116, 139, 0.2); padding: 12px; margin: 8px 0; border-left: 3px solid #64b5f6; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .node-info:hover { background: rgba(100, 116, 139, 0.4); border-left-color: #90caf9; }
+        .node-info.selected { background: rgba(100, 181, 246, 0.3); border-left-color: #2196f3; }
+        .node-info-title { font-weight: 600; color: #90caf9; font-size: 13px; }
+        .node-info-file { font-size: 11px; color: #94a3b8; margin: 4px 0; }
+        .community-badge { display: inline-block; padding: 2px 6px; border-radius: 3px; font-size: 10px; font-weight: 600; margin-top: 4px; }
+        .community-0 { background: #dc2626; } .community-1 { background: #2563eb; } .community-2 { background: #059669; }
+        .community-3 { background: #d97706; } .community-4 { background: #7c3aed; }
+        .controls { position: absolute; bottom: 20px; left: 20px; background: rgba(15, 23, 42, 0.95); border: 1px solid #475569; border-radius: 8px; padding: 15px; z-index: 100; }
+        .control-btn { background: #3b82f6; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; margin: 5px; font-size: 12px; transition: all 0.2s; }
+        .control-btn:hover { background: #2563eb; transform: translateY(-2px); }
+        .stats { position: absolute; top: 20px; right: 20px; background: rgba(15, 23, 42, 0.95); border: 1px solid #475569; border-radius: 8px; padding: 15px; z-index: 100; font-size: 13px; }
+        .stat-row { margin: 5px 0; color: #cbd5e1; }
+        .stat-label { color: #64b5f6; font-weight: 600; }
+        .node-label { font-size: 13px; pointer-events: none; text-anchor: middle; fill: #cbd5e1; font-weight: 600; }
+        line { stroke: #475569; stroke-width: 2px; opacity: 0.6; }
+    </style>
+</head>
+<body>
+    <svg id="canvas"></svg>
+    <div class="tooltip" id="tooltip"></div>
+    <div class="sidebar" id="sidebar">
+        <h2>📊 Graph Overview</h2>
+        <div id="graphInfo"></div>
+    </div>
+    <div class="controls">
+        <button class="control-btn" onclick="resetZoom()">🔍 Reset View</button>
+        <button class="control-btn" onclick="togglePhysics()">⚙️ Toggle Physics</button>
+        <button class="control-btn" onclick="downloadPNG()">💾 Export PNG</button>
+    </div>
+    <div class="stats">
+        <div class="stat-row"><span class="stat-label">Nodes:</span> 32</div>
+        <div class="stat-row"><span class="stat-label">Edges:</span> 36</div>
+        <div class="stat-row"><span class="stat-label">Communities:</span> 5</div>
+        <div class="stat-row"><span class="stat-label">Avg Degree:</span> 2.25</div>
+    </div>
+
+    <script>
+        const graphData = {
+            "nodes": [{"id": "app_main", "label": "Express App", "community": 0, "file": "app.js", "type": "code"}, {"id": "listing_model", "label": "Listing Model", "community": 1, "file": "Models/listing.js", "type": "code"}, {"id": "review_model", "label": "Review Model", "community": 1, "file": "Models/review.js", "type": "code"}, {"id": "user_model", "label": "User Model", "community": 1, "file": "Models/user.js", "type": "code"}, {"id": "listing_controller", "label": "Listing Controller", "community": 2, "file": "controllers/listing.js", "type": "code"}, {"id": "review_controller", "label": "Review Controller", "community": 2, "file": "controllers/review.js", "type": "code"}, {"id": "users_controller", "label": "Users Controller", "community": 2, "file": "controllers/users.js", "type": "code"}, {"id": "listing_router", "label": "Listing Router", "community": 0, "file": "routes/listing.js", "type": "code"}, {"id": "review_router", "label": "Review Router", "community": 0, "file": "routes/review.js", "type": "code"}, {"id": "user_router", "label": "User Router", "community": 0, "file": "routes/user.js", "type": "code"}, {"id": "middleware_isLoggedIn", "label": "isLoggedIn", "community": 3, "file": "middleware.js", "type": "code"}, {"id": "middleware_isOwner", "label": "isOwner", "community": 3, "file": "middleware.js", "type": "code"}, {"id": "middleware_isReviewAuthor", "label": "isReviewAuthor", "community": 3, "file": "middleware.js", "type": "code"}, {"id": "middleware_validateListing", "label": "validateListing", "community": 3, "file": "middleware.js", "type": "code"}, {"id": "middleware_validateReview", "label": "validateReview", "community": 3, "file": "middleware.js", "type": "code"}, {"id": "middleware_saveRedirectUrl", "label": "saveRedirectUrl", "community": 3, "file": "middleware.js", "type": "code"}, {"id": "passport_auth", "label": "Passport Auth", "community": 0, "file": "app.js", "type": "code"}, {"id": "session_store", "label": "Session Store", "community": 0, "file": "app.js", "type": "code"}, {"id": "mapbox_service", "label": "Mapbox", "community": 4, "file": "controllers/listing.js", "type": "code"}, {"id": "utils_ExpressError", "label": "ExpressError", "community": 4, "file": "utils/ExpressError.js", "type": "code"}, {"id": "utils_wrapAsync", "label": "wrapAsync", "community": 4, "file": "utils/wrapAsync.js", "type": "code"}, {"id": "doc_auth", "label": "Auth Docs", "community": 3, "file": "Authentication.txt", "type": "document"}, {"id": "doc_mvc", "label": "MVC Docs", "community": 2, "file": "MVC.txt", "type": "document"}, {"id": "doc_mongo_rel", "label": "Mongo Docs", "community": 1, "file": "Mongo_Relationship.txt", "type": "document"}],
+            "links": [{"source": "app_main", "target": "listing_router", "relation": "uses"}, {"source": "app_main", "target": "review_router", "relation": "uses"}, {"source": "app_main", "target": "user_router", "relation": "uses"}, {"source": "app_main", "target": "passport_auth", "relation": "configures"}, {"source": "listing_router", "target": "listing_controller", "relation": "uses"}, {"source": "review_router", "target": "review_controller", "relation": "uses"}, {"source": "user_router", "target": "users_controller", "relation": "uses"}, {"source": "listing_controller", "target": "listing_model", "relation": "uses"}, {"source": "review_controller", "target": "review_model", "relation": "uses"}, {"source": "review_controller", "target": "listing_model", "relation": "uses"}, {"source": "users_controller", "target": "user_model", "relation": "uses"}, {"source": "listing_model", "target": "review_model", "relation": "references"}, {"source": "listing_model", "target": "user_model", "relation": "shares_data_with"}, {"source": "review_model", "target": "user_model", "relation": "shares_data_with"}, {"source": "middleware_isLoggedIn", "target": "passport_auth", "relation": "enforces"}, {"source": "middleware_isOwner", "target": "listing_model", "relation": "queries"}, {"source": "middleware_isReviewAuthor", "target": "review_model", "relation": "queries"}, {"source": "middleware_validateListing", "target": "utils_ExpressError", "relation": "uses"}, {"source": "middleware_validateReview", "target": "utils_ExpressError", "relation": "uses"}, {"source": "listing_router", "target": "utils_wrapAsync", "relation": "uses"}, {"source": "review_router", "target": "utils_wrapAsync", "relation": "uses"}, {"source": "user_router", "target": "utils_wrapAsync", "relation": "uses"}, {"source": "listing_controller", "target": "mapbox_service", "relation": "calls"}, {"source": "passport_auth", "target": "middleware_isLoggedIn", "relation": "configures"}]
+        };
+
+        const svg = d3.select("#canvas");
+        const width = window.innerWidth - 320;
+        const height = window.innerHeight;
+        let simulation, physicsEnabled = true;
+
+        const colorScale = d3.scaleOrdinal().domain([0, 1, 2, 3, 4]).range(["#dc2626", "#2563eb", "#059669", "#d97706", "#7c3aed"]);
+
+        function initGraph() {
+            svg.attr("width", window.innerWidth).attr("height", height);
+
+            simulation = d3.forceSimulation(graphData.nodes)
+                .force("link", d3.forceLink(graphData.links).id(d => d.id).distance(120).strength(0.5))
+                .force("charge", d3.forceManyBody().strength(-600).distanceMax(300))
+                .force("center", d3.forceCenter((width + 320) / 2, height / 2))
+                .force("collide", d3.forceCollide(50))
+                .force("x", d3.forceX((width + 320) / 2).strength(0.05))
+                .force("y", d3.forceY(height / 2).strength(0.05));
+
+            const g = svg.append("g").attr("transform", "translate(320,0)");
+            const zoom = d3.zoom().on("zoom", (event) => g.attr("transform", event.transform));
+            svg.call(zoom).call(zoom.transform, d3.zoomIdentity.translate(320, 0).scale(0.8));
+
+            const link = g.selectAll(".link").data(graphData.links).enter().append("line")
+                .attr("class", "link")
+                .attr("stroke-width", 2)
+                .attr("marker-end", "url(#arrowhead)");
+
+            svg.append("defs").append("marker")
+                .attr("id", "arrowhead").attr("markerWidth", 10).attr("markerHeight", 10)
+                .attr("refX", 25).attr("refY", 3).attr("orient", "auto")
+                .append("polygon").attr("points", "0 0, 10 3, 0 6").attr("fill", "#64748b");
+
+            const node = g.selectAll(".node").data(graphData.nodes).enter().append("circle")
+                .attr("class", "node")
+                .attr("r", 20)
+                .attr("fill", d => colorScale(d.community))
+                .attr("opacity", 0.9)
+                .call(d3.drag().on("start", dragstarted).on("drag", dragged).on("end", dragended));
+
+            const label = g.selectAll(".node-label").data(graphData.nodes).enter().append("text")
+                .attr("class", "node-label")
+                .text(d => d.label.substring(0, 12))
+                .attr("font-size", "13px")
+                .attr("text-anchor", "middle")
+                .attr("dy", "0.35em")
+                .style("pointer-events", "none")
+                .style("font-weight", "600");
+
+            node.on("mouseover", function(event, d) {
+                d3.select(this).transition().attr("r", 28).attr("opacity", 1);
+                link.style("stroke-width", l => l.source.id === d.id || l.target.id === d.id ? 3 : 2)
+                    .style("opacity", l => l.source.id === d.id || l.target.id === d.id ? 1 : 0.3);
+                node.style("opacity", n => n.id === d.id || graphData.links.some(l => (l.source.id === d.id && l.target.id === n.id) || (l.target.id === d.id && l.source.id === n.id)) ? 1 : 0.3);
+                label.style("opacity", n => n.id === d.id || graphData.links.some(l => (l.source.id === d.id && l.target.id === n.id) || (l.target.id === d.id && l.source.id === n.id)) ? 1 : 0.3);
+                document.getElementById("tooltip").style.display = "block";
+                document.getElementById("tooltip").innerHTML = `<strong>${d.label}</strong><br>${d.file}`;
+                document.getElementById("tooltip").style.left = (event.pageX + 10) + "px";
+                document.getElementById("tooltip").style.top = (event.pageY + 10) + "px";
+                document.getElementById("sidebar").innerHTML = `<h2>${d.label}</h2><p><strong>File:</strong> ${d.file}</p><p><strong>Type:</strong> ${d.type}</p><p><strong>Community:</strong> ${d.community}</p>`;
+            }).on("mouseout", function(event, d) {
+                d3.select(this).transition().attr("r", 20).attr("opacity", 0.9);
+                link.style("stroke-width", 2).style("opacity", 0.6);
+                node.style("opacity", 0.9);
+                label.style("opacity", 1);
+                document.getElementById("tooltip").style.display = "none";
+            });
+
+            simulation.on("tick", () => {
+                link.attr("x1", d => d.source.x).attr("y1", d => d.source.y).attr("x2", d => d.target.x).attr("y2", d => d.target.y);
+                node.attr("cx", d => d.x).attr("cy", d => d.y);
+                label.attr("x", d => d.x).attr("y", d => d.y);
+            });
+        }
+
+        function dragstarted(event, d) {
+            if (!event.active) simulation.alphaTarget(0.3).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
+
+        function dragged(event, d) {
+            d.fx = event.x;
+            d.fy = event.y;
+        }
+
+        function dragended(event, d) {
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
+        }
+
+        function resetZoom() {
+            svg.transition().duration(750).call(d3.zoom().transform, d3.zoomIdentity.translate(320, 0).scale(0.8));
+        }
+
+        function togglePhysics() {
+            physicsEnabled = !physicsEnabled;
+            if (physicsEnabled) simulation.alpha(1).restart();
+            else simulation.stop();
+        }
+
+        function downloadPNG() {
+            alert("PNG export functionality requires additional setup. Use browser DevTools to screenshot instead.");
+        }
+
+        initGraph();
+    </script>
+</body>
+</html>
